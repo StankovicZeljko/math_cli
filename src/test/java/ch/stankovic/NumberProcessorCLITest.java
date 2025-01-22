@@ -3,6 +3,7 @@ package ch.stankovic;
 import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
@@ -11,60 +12,119 @@ import static org.junit.jupiter.api.Assertions.*;
 class NumberProcessorCLITest {
 
     @Test
-    void testValidArguments() {
-        // Capture console output
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        PrintStream originalOut = System.out;
-        System.setOut(new PrintStream(outputStream));
+    void cliTestSumActionWithValidStdin() {
+        // Simulierte Eingabe über stdin
+        String input = "1.0,2.0,3.0";
+        System.setIn(new ByteArrayInputStream(input.getBytes()));
 
-        try {
-            // Simulate CLI arguments
-            String[] args = {"-i", "stdin", "-o", "stdout", "-a", "sum"};
-            NumberProcessorCLI cli = new NumberProcessorCLI();
-            CommandLine cmd = new CommandLine(cli);
-            int exitCode = cmd.execute(args);
+        // Ausgabe abfangen
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(output));
 
-            // Assertions
-            assertEquals(0, exitCode, "Expected exit code to be 0");
-            assertEquals("stdin", cli.input, "Input argument not set correctly");
-            assertEquals("stdout", cli.output, "Output argument not set correctly");
-            assertEquals("sum", cli.action, "Action argument not set correctly");
+        // CLI ausführen
+        String[] args = {"-a", "sum"};
+        NumberProcessorCLI cli = new NumberProcessorCLI();
+        CommandLine cmd = new CommandLine(cli);
+        int exitCode = cmd.execute(args);
 
-            // Validate console output
-            String expectedOutput = "Input: stdin, Output: stdout, Action: sum";
-            String actualOutput = outputStream.toString().trim();
-            assertTrue(actualOutput.contains(expectedOutput),
-                    "Console output does not match expected output");
-        } finally {
-            // Restore original System.out
-            System.setOut(originalOut);
-        }
+        // Überprüfen
+        assertEquals(0, exitCode, "CLI: Exit code should be 0 for successful execution");
+        assertEquals("6.0", output.toString().trim(), "CLI: Output should be the sum of the input numbers");
     }
 
     @Test
-    void testMissingRequiredArguments() {
-        // Simulate missing arguments
-        String[] args = {"-i", "stdin"};
+    void cliTestMinMaxActionWithValidStdin() {
+        // Simulierte Eingabe über stdin
+        String input = "1.0,5.0,3.0";
+        System.setIn(new ByteArrayInputStream(input.getBytes()));
+
+        // Ausgabe abfangen
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(output));
+
+        // CLI ausführen
+        String[] args = {"-a", "minMax"};
         NumberProcessorCLI cli = new NumberProcessorCLI();
         CommandLine cmd = new CommandLine(cli);
-
         int exitCode = cmd.execute(args);
 
-        // Assertions
-        assertNotEquals(0, exitCode, "Expected non-zero exit code for missing arguments");
+        // Überprüfen
+        assertEquals(0, exitCode, "CLI: Exit code should be 0 for successful execution");
+        assertEquals("1.0,5.0", output.toString().trim(), "CLI: Output should be the min and max of the input numbers");
     }
 
     @Test
-    void testInvalidActionArgument() {
-        // Simulate invalid action
-        String[] args = {"-i", "stdin", "-o", "stdout", "-a", "invalidAction"};
+    void cliTestLt4ActionWithValidStdin() {
+        // Simulierte Eingabe über stdin
+        String input = "1.0,5.0,3.0,2.0";
+        System.setIn(new ByteArrayInputStream(input.getBytes()));
+
+        // Ausgabe abfangen
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(output));
+
+        // CLI ausführen
+        String[] args = {"-a", "lt4"};
         NumberProcessorCLI cli = new NumberProcessorCLI();
         CommandLine cmd = new CommandLine(cli);
+        int exitCode = cmd.execute(args);
 
+        // Überprüfen
+        assertEquals(0, exitCode, "CLI: Exit code should be 0 for successful execution");
+        assertEquals("1.0,3.0,2.0", output.toString().trim(), "CLI: Output should be the filtered numbers less than 4");
+    }
+
+    @Test
+    void cliTestEmptyInput() {
+        // Simulierte leere Eingabe über stdin
+        String input = "";
+        System.setIn(new ByteArrayInputStream(input.getBytes()));
+
+        // Fehlerausgabe abfangen
+        ByteArrayOutputStream errorStream = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(errorStream));
+
+        // CLI ausführen
+        String[] args = {"-a", "sum"};
+        NumberProcessorCLI cli = new NumberProcessorCLI();
+        CommandLine cmd = new CommandLine(cli);
         int exitCode = cmd.execute(args);
 
         // Assertions
-        assertNotEquals(0, exitCode, "Expected non-zero exit code for invalid action");
+        assertEquals(1, exitCode, "CLI: Exit code should be 1 for empty input");
+        String errorOutput = errorStream.toString().trim();
+        assertEquals("Error: Input is empty", errorOutput, "CLI: Expected error message for empty input");
     }
+
+
+    @Test
+    void cliTestInvalidAction() {
+        // Simulierte Eingabe über stdin
+        String input = "1.0,2.0,3.0";
+        System.setIn(new ByteArrayInputStream(input.getBytes()));
+
+        // Fehlerausgabe abfangen
+        ByteArrayOutputStream errorStream = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(errorStream));
+
+        // CLI ausführen
+        String[] args = {"-a", "invalidAction"};
+        NumberProcessorCLI cli = new NumberProcessorCLI();
+        CommandLine cmd = new CommandLine(cli);
+        int exitCode = cmd.execute(args);
+
+        // Assertions
+        assertEquals(1, exitCode, "CLI: Exit code should be 1 for invalid action");
+        String errorOutput = errorStream.toString().trim();
+        assertTrue(
+                errorOutput.startsWith("Invalid action: invalidAction."),
+                "CLI: Expected error message for invalid action"
+        );
+        assertTrue(
+                errorOutput.contains("Valid actions are: [sum, minMax, lt4]"),
+                "CLI: Expected list of valid actions in error message"
+        );
+    }
+
 
 }

@@ -1,5 +1,13 @@
 package ch.stankovic;
 
+import ch.stankovic.actions.Action;
+import ch.stankovic.actions.LessThanFourAction;
+import ch.stankovic.actions.MinMaxAction;
+import ch.stankovic.actions.SumAction;
+import ch.stankovic.input.InputHandler;
+import ch.stankovic.input.StdinInputHandler;
+import ch.stankovic.output.OutputHandler;
+import ch.stankovic.output.StdoutOutputHandler;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Command;
@@ -13,11 +21,6 @@ import java.util.concurrent.Callable;
         mixinStandardHelpOptions = true
 )
 public class NumberProcessorCLI implements Callable<Integer> {
-    @Option(names = {"-i", "--input"}, description = "Input source (stdin, file, URL)", required = true)
-    String input;
-
-    @Option(names = {"-o", "--output"}, description = "Output destination (stdout, file, URL)")
-    String output;
 
     @Option(names = {"-a", "--action"}, description = "Action to perform (sum, minMax, lt4)", required = true)
     String action;
@@ -26,15 +29,42 @@ public class NumberProcessorCLI implements Callable<Integer> {
 
     @Override
     public Integer call() {
+        try {
+            // Validierung der Aktion
+            if (!VALID_ACTIONS.contains(action)) {
+                System.err.printf("Invalid action: %s. Valid actions are: %s%n", action, VALID_ACTIONS);
+                return 1; // Exit code for invalid action
+            }
 
-        if (!VALID_ACTIONS.contains(action)) {
-            System.err.printf("Invalid action: %s. Valid actions are: %s%n", action, VALID_ACTIONS);
-            return 1; // Exit code for invalid action
+            // Zahlen aus stdin einlesen
+            InputHandler inputHandler = new StdinInputHandler();
+            List<Double> numbers = inputHandler.readNumbers();
+
+            if (numbers.isEmpty()) {
+                System.err.println("Error: Input is empty");
+                return 1; // Exit code for empty input
+            }
+
+            // Aktion ausführen
+            Action actionProcessor = switch (action) {
+                case "sum" -> new SumAction();
+                case "minMax" -> new MinMaxAction();
+                case "lt4" -> new LessThanFourAction();
+                default -> throw new IllegalStateException("Unexpected action: " + action);
+            };
+            String result = actionProcessor.execute(numbers, "csv");
+
+            // Ergebnis auf stdout ausgeben
+            OutputHandler outputHandler = new StdoutOutputHandler();
+            outputHandler.writeResult(result);
+
+            return 0; // Exit code for success
+        } catch (Exception e) {
+            System.err.printf("An error occurred: %s%n", e.getMessage());
+            return 2; // Exit code for errors
         }
-
-        System.out.printf("Input: %s, Output: %s, Action: %s%n", input, output, action);
-        return 0;
     }
+
 
     public static void main(String[] args) {
         int exitCode = new CommandLine(new NumberProcessorCLI()).execute(args);
