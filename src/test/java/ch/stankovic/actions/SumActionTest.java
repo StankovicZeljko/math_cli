@@ -1,11 +1,12 @@
 package ch.stankovic.actions;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SumActionTest {
 
@@ -22,7 +23,15 @@ class SumActionTest {
         SumAction action = new SumAction();
         List<Double> numbers = List.of(1.0, 2.0, 3.0);
         String result = action.execute(numbers, "json");
-        assertEquals("{\"sum\": 6.0}", result, "SumAction JSON output is incorrect");
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            JsonNode expected = objectMapper.readTree("{\"sum\": 6.0}");
+            JsonNode actual = objectMapper.readTree(result);
+            assertEquals(expected, actual, "SumAction JSON output is incorrect");
+        } catch (Exception e) {
+            fail("JSON comparison failed", e);
+        }
     }
 
     @Test

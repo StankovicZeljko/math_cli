@@ -1,11 +1,12 @@
 package ch.stankovic.actions;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class LessThanFourActionTest {
 
@@ -22,8 +23,17 @@ class LessThanFourActionTest {
         LessThanFourAction action = new LessThanFourAction();
         List<Double> numbers = List.of(1.0, 5.0, 3.0, 2.5);
         String result = action.execute(numbers, "json");
-        assertEquals("[1.0, 3.0, 2.5]", result, "LessThanFourAction JSON output is incorrect");
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            JsonNode expected = objectMapper.readTree("[1.0, 3.0, 2.5]");
+            JsonNode actual = objectMapper.readTree(result);
+            assertEquals(expected, actual, "LessThanFourAction JSON output is incorrect");
+        } catch (Exception e) {
+            fail("JSON comparison failed", e);
+        }
     }
+
 
     @Test
     void testExecuteEmptyList() {

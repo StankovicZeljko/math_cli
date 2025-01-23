@@ -3,7 +3,7 @@ package ch.stankovic.output;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+
 import java.io.PrintStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -11,47 +11,59 @@ import static org.junit.jupiter.api.Assertions.*;
 class StdoutOutputHandlerTest {
 
     @Test
-    void testWriteResult_ValidOutput() throws IOException {
-        // Simulierte Ausgabe
+    void testWriteResultCsvFormatPositive() {
+        // Capture the console output
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         System.setOut(new PrintStream(outputStream));
 
-        // Teste StdoutOutputHandler
-        OutputHandler outputHandler = new StdoutOutputHandler();
-        String simulatedResult = "1.0,2.5,3.7";
-        outputHandler.writeResult(simulatedResult);
+        StdoutOutputHandler handler = new StdoutOutputHandler("csv");
+        String result = "1.0,2.0,3.0";
 
-        // Erwartete Ausgabe
-        String expectedOutput = "1.0,2.5,3.7";
+        // Act
+        handler.writeResult(result);
 
-        // Assertions
-        assertEquals(expectedOutput.trim(), outputStream.toString().trim(), "The output written to stdout does not match the expected output.");
+        // Assert
+        assertEquals("1.0,2.0,3.0\n\n", outputStream.toString(), "Output should match the input result with newline");
     }
 
     @Test
-    void testWriteResult_EmptyOutput() throws IOException {
-        // Simulierte leere Ausgabe
+    void testWriteResultJsonFormatPositive() {
+        // Capture the console output
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         System.setOut(new PrintStream(outputStream));
 
-        // Teste StdoutOutputHandler
-        OutputHandler outputHandler = new StdoutOutputHandler();
-        outputHandler.writeResult("");
+        StdoutOutputHandler handler = new StdoutOutputHandler("json");
+        String result = "{\"sum\": 6.0}";
 
-        // Erwartete Ausgabe
-        String expectedOutput = "";
+        // Act
+        handler.writeResult(result);
 
-        // Assertions
-        assertEquals(expectedOutput.trim(), outputStream.toString().trim(), "The output should be empty.");
+        // Assert
+        assertEquals("{\"sum\": 6.0}\n\n", outputStream.toString(), "Output should match the JSON result with newline");
     }
 
     @Test
-    void testWriteResult_NullOutput() {
-        // Teste StdoutOutputHandler
-        OutputHandler outputHandler = new StdoutOutputHandler();
+    void testWriteResultNullResult() {
+        StdoutOutputHandler handler = new StdoutOutputHandler("csv");
 
-        // Erwartung: NullPointerException wird geworfen
-        assertThrows(NullPointerException.class, () -> outputHandler.writeResult(null), "Expected a NullPointerException for null output");
+        // Assert
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> handler.writeResult(null));
+        assertEquals("Output result cannot be null", exception.getMessage());
+    }
+
+    @Test
+    void testUnsupportedFormat() {
+        // Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new StdoutOutputHandler("xml"));
+        assertEquals("Unsupported output format: xml", exception.getMessage());
+    }
+
+    @Test
+    void testGetFormat() {
+        StdoutOutputHandler handler = new StdoutOutputHandler("csv");
+
+        // Assert
+        assertEquals("csv", handler.getFormat(), "Format should be 'csv'");
     }
 
 }

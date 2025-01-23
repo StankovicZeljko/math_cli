@@ -1,11 +1,12 @@
 package ch.stankovic.actions;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class MinMaxActionTest {
 
@@ -22,8 +23,17 @@ class MinMaxActionTest {
         MinMaxAction action = new MinMaxAction();
         List<Double> numbers = List.of(1.0, 5.0, 3.0);
         String result = action.execute(numbers, "json");
-        assertEquals("{\"min\": 1.0, \"max\": 5.0}", result, "MinMaxAction JSON output is incorrect");
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            JsonNode expected = objectMapper.readTree("{\"min\": 1.0, \"max\": 5.0}");
+            JsonNode actual = objectMapper.readTree(result);
+            assertEquals(expected, actual, "MinMaxAction JSON output is incorrect");
+        } catch (Exception e) {
+            fail("JSON comparison failed", e);
+        }
     }
+
 
     @Test
     void testExecuteEmptyList() {

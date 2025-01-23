@@ -11,47 +11,40 @@ import static org.junit.jupiter.api.Assertions.*;
 class StdinInputHandlerTest {
 
     @Test
-    void testReadNumbers_ValidInput() throws IOException {
-        // Simulierte Eingabe
-        String simulatedInput = "1.0,2.5,3.7";
-        System.setIn(new ByteArrayInputStream(simulatedInput.getBytes()));
-
-        // Teste StdinInputHandler
-        InputHandler inputHandler = new StdinInputHandler();
+    void testReadNumbers_ValidCsvInput() throws IOException {
+        System.setIn(new ByteArrayInputStream("1.0,2.5,3.7".getBytes()));
+        InputHandler inputHandler = new StdinInputHandler("csv");
         List<Double> numbers = inputHandler.readNumbers();
+        assertEquals(List.of(1.0, 2.5, 3.7), numbers);
+    }
 
-        // Erwartete Ausgabe
-        List<Double> expectedNumbers = List.of(1.0, 2.5, 3.7);
-
-        // Assertions
-        assertEquals(expectedNumbers, numbers, "The numbers read from stdin do not match the expected output.");
+    @Test
+    void testReadNumbers_ValidJsonInput() throws IOException {
+        System.setIn(new ByteArrayInputStream("[1.0, 2.5, 3.7]".getBytes()));
+        InputHandler inputHandler = new StdinInputHandler("json");
+        List<Double> numbers = inputHandler.readNumbers();
+        assertEquals(List.of(1.0, 2.5, 3.7), numbers);
     }
 
     @Test
     void testReadNumbers_EmptyInput() throws IOException {
-        // Simulierte leere Eingabe
-        String simulatedInput = "";
-        System.setIn(new ByteArrayInputStream(simulatedInput.getBytes()));
-
-        // Teste StdinInputHandler
-        InputHandler inputHandler = new StdinInputHandler();
+        System.setIn(new ByteArrayInputStream("".getBytes()));
+        InputHandler inputHandler = new StdinInputHandler("csv");
         List<Double> numbers = inputHandler.readNumbers();
-
-        // Assertions
-        assertTrue(numbers.isEmpty(), "The result should be an empty list for empty input.");
+        assertTrue(numbers.isEmpty(), "Empty input should return an empty list");
     }
 
     @Test
-    void testReadNumbers_InvalidNumbers() {
-        // Simulierte ungültige Eingabe
-        String simulatedInput = "1.0,abc,3.7";
-        System.setIn(new ByteArrayInputStream(simulatedInput.getBytes()));
-
-        // Teste StdinInputHandler
-        InputHandler inputHandler = new StdinInputHandler();
-
-        // Assertions: IOException wird erwartet
-        assertThrows(NumberFormatException.class, inputHandler::readNumbers, "Expected a NumberFormatException for invalid input.");
+    void testReadNumbers_InvalidJsonInput() {
+        System.setIn(new ByteArrayInputStream("[1.0, abc, 3.7]".getBytes()));
+        InputHandler inputHandler = new StdinInputHandler("json");
+        assertThrows(IllegalArgumentException.class, inputHandler::readNumbers, "Invalid JSON should throw an exception");
     }
 
+    @Test
+    void testUnsupportedFormat() {
+        System.setIn(new ByteArrayInputStream("1.0,2.5,3.7".getBytes()));
+        InputHandler inputHandler = new StdinInputHandler("xml");
+        assertThrows(IllegalArgumentException.class, inputHandler::readNumbers, "Unsupported format should throw an exception");
+    }
 }
